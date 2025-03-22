@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外送好幫手</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .menu-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-decoration: none;
+            color: #333;
+            transition: transform 0.2s;
+        }
+        .menu-item:hover {
+            transform: translateY(-2px);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .menu-item h2 {
+            margin-bottom: 10px;
+            color: #2196F3;
+        }
+        .menu-item p {
+            color: #666;
+            font-size: 0.9em;
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>外送好幫手</h1>
+    <div class="menu-grid">
+        <a href="delivery-ordercompletionrate.html" class="menu-item">
+            <h2>取單率計算</h2>
+            <p>計算達到87%取單率所需完成的訂單數量</p>
+        </a>
+        <a href="delivery-quickcanned.html" class="menu-item">
+            <h2>外送罐頭包</h2>
+            <p>常用回覆句子，快速複製使用</p>
+        </a>
+    </div>
+</body>
+</html>

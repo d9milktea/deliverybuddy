@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>87%以下時的取單率計算(僅供參考)</title>
+  <style>
+    /* 定義色彩變數 */
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #50e3c2;
+      --background-color: #f4f7fb;
+      --header-footer-bg: #ffffff;
+      --border-color: #d0d7de;
+      --text-color: #333;
+      --subtext-color: #666;
+      --input-focus-color: #fff9c4;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      font-size: 1.1em;
+      line-height: 1.5;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+
+    /* 將 body 設為 flex container */
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header,
+    footer {
+      flex: 0 0 auto;
+      padding: 10px 20px;
+      background: var(--header-footer-bg);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5em;
+      color: var(--primary-color);
+    }
+
+    footer p {
+      margin: 0;
+      font-size: 0.8em;
+      text-align: center;
+      color: var(--subtext-color);
+    }
+
+    /* 次標題 (免責說明) */
+    .subtitle {
+      font-size: 0.85em;
+      margin-top: 5px;
+    }
+
+    .subtitle:first-of-type {
+      color: var(--subtext-color);
+    }
+
+    .subtitle:last-of-type {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    /* main 區塊撐滿剩餘空間 */
+    main {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 15px 20px;
+      overflow: hidden;
+    }
+
+    .input-area {
+      margin-bottom: 5px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .input-area label {
+      display: inline-block;
+    }
+
+    .input-area input {
+      font-size: 1em;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      transition: border-color 0.3s ease;
+    }
+
+    /* input focus 狀態 */
+    .input-area input:focus {
+      outline: none;
+      border-color: var(--input-focus-color);
+      box-shadow: 0 0 5px rgba(80, 227, 194, 0.5);
+      background-color: #fff9c4;
+    }
+
+    .input-area button {
+      font-size: 1em;
+      padding: 8px 14px;
+      cursor: pointer;
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+
+    .input-area button:hover {
+      background: var(--secondary-color);
+    }
+
+    #estimatedOrders {
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    /* table-container 撐滿 main 的剩餘空間 */
+    .table-container {
+      flex: 1 1 auto;
+      width: 100%;
+      border: 1px solid var(--border-color);
+      background: #fff;
+      overflow-y: auto;
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      background: var(--background-color);
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      text-align: center;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: var(--background-color);
+      z-index: 10;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        font-size: 0.93em;
+      }
+
+      header h1 {
+        font-size: 1.2em;
+      }
+
+      .subtitle {
+        font-size: 0.8em;
+        margin-top: 0px;
+      }
+
+      footer p {
+        font-size: 0.7em;
+      }
+
+      .input-area {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>87%以下時的取單率計算</h1>
+    <div class="subtitle" style="color: #555;">
+      本頁面所有數據皆為模擬計算結果，僅供參考；實際結果以APP或公司公告顯示為主。
+    </div>
+    <div class="subtitle" style="color: #FF0000; font-weight: bold;">
+      <strong>預估取單率：</strong> 預估完成單數 / 預估總派單數，再乘以 100，並四捨五入到小數點後兩位。
+    </div>
+  </header>
+
+  <main id="topSection">
+    <div class="input-area">
+      <label for="completedOrders">過往紀錄完成訂單件數：</label>
+      <input type="number" inputmode="numeric" id="completedOrders" min="0" required />
+
+      <label for="currentRate">區間取單率(%)：</label>
+      <input type="number" inputmode="decimal" id="currentRate" min="0" max="100" step="0.01" required />
+
+      <button onclick="calculateOrderRate()">計算</button>
+    </div>
+
+    <div id="estimatedOrders"></div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>預估總派單數</th>
+            <th>預估完成單數</th>
+            <th>預估取單率</th>
+          </tr>
+        </thead>
+        <tbody id="resultTableBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <footer>
+    <p style="text-align:center;">
+      &copy; 2025 d9milktea Inc. | 本頁面所有數據皆為模擬計算結果僅供參考
+    </p>
+  </footer>
+
+  <script>
+    function calculateOrderRate() {
+      if (!document.getElementById('completedOrders').value || !document.getElementById('currentRate').value) {
+        alert('完成單數與取單率需輸入數值');
+        return;
+      }
+      // 取得並驗證輸入值不得為負數
+      let initialCompleted = parseInt(document.getElementById('completedOrders').value, 10);
+      const currentRate = parseFloat(document.getElementById('currentRate').value);
+      if (initialCompleted < 0 || currentRate < 0) {
+        alert('完成單數與取單率不能為負數');
+        return;
+      }
+      let completed = initialCompleted;
+      const tableBody = document.getElementById('resultTableBody');
+      const estimatedOrdersText = document.getElementById('estimatedOrders');
+      tableBody.innerHTML = '';
+
+      if (currentRate >= 87) {
+        estimatedOrdersText.textContent = '目前取單率已達 87% 以上，無需計算。';
+        return;
+      }
+
+      // 推估總派單數取無條件進入整數位
+      let totalOrders = Math.ceil(completed / (currentRate / 100));
+
+      // 先將第一列加入表格
+      const firstRate = ((completed / totalOrders) * 100).toFixed(2);
+      const firstRow = document.createElement('tr');
+      firstRow.innerHTML = `
+        <td>${totalOrders}</td>
+        <td>${completed}</td>
+        <td>${firstRate}%</td>
+      `;
+      tableBody.appendChild(firstRow);
+
+      let countRate = ((completed / totalOrders) * 100).toFixed(2);
+
+      // 只要尚未達到 87% 取單率，就持續累計完成數與總派單數
+      while (countRate <= 87) {
+        completed++;
+        totalOrders++;
+        countRate = ((completed / totalOrders) * 100).toFixed(2);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${totalOrders}</td>
+          <td>${completed}</td>
+          <td>${countRate}%</td>
+        `;
+        tableBody.appendChild(row);
+      }
+
+      // 計算連續需要完成的訂單數（差值皆為整數）
+      const consecutiveOrdersNeeded = completed - initialCompleted;
+      estimatedOrdersText.textContent = `預估要連續完成訂單 ${consecutiveOrdersNeeded} 筆 才能達到 87% 以上。`;
+    }
+  </script>
+</body>
+
+</html>
