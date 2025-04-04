@@ -40,12 +40,6 @@
             background: #f8f9fa;
             border-radius: 6px;
             display: flex;
-            /* justify-content: space-between; */
-            align-items: center;
-        }
-
-        .tree-title {
-            display: flex;
             align-items: center;
         }
 
@@ -72,7 +66,7 @@
         }
 
         .phrase-item span {
-            white-space: pre-wrap; /* 保留換行符號 */
+            white-space: pre-wrap;
         }
 
         .copy-btn {
@@ -111,13 +105,122 @@
             border-radius: 20px;
             display: none;
         }
+
+        /* 修改側邊導航欄樣式，在行動裝置上固定顯示在頂部 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .sidebar {
+            width: 100%;
+            position: sticky; /* 更改為粘性定位 */
+            top: 0; /* 固定在頂部 */
+            z-index: 100; /* 確保在其他內容之上 */
+            overflow-x: auto;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+        }
+
+        .nav-container {
+            display: flex; /* 在行動裝置上水平排列 */
+        }
+
+        .nav-item {
+            padding: 8px 10px;
+            margin-right: 5px;
+            white-space: nowrap; /* 防止文字換行 */
+            border-radius: 4px;
+            cursor: pointer;
+            color: #333;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #e3f2fd;
+        }
+
+        .nav-item.active {
+            background: #2196F3;
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        /* 為活動項增加指示器 */
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: #2196F3;
+            border-radius: 50%;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* 桌面版佈局 */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+
+            .sidebar {
+                width: 150px;
+                position: sticky;
+                top: 20px; /* 在桌面版上給頂部一些距離 */
+                height: calc(100vh - 40px);
+                overflow-y: auto;
+                padding-right: 15px;
+            }
+
+            .nav-container {
+                display: block; /* 在桌面版垂直排列 */
+            }
+
+            .nav-item {
+                margin-bottom: 5px;
+                margin-right: 0;
+            }
+
+            /* 修改活動項指示器位置 */
+            .nav-item.active::after {
+                bottom: auto;
+                left: -5px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+        }
     </style>
 </head>
 
 <body>
     <button onclick="location.href='index.html'" class="back-btn">← 返回</button>
     <h1>外送罐頭包</h1>
-    <div class="tree-menu" id="phraseTree"></div>
+
+    <div class="container">
+        <!-- 側邊導航欄 -->
+        <div class="sidebar">
+            <div class="nav-container" id="navSidebar"></div>
+        </div>
+
+        <!-- 主要內容區域 -->
+        <div class="main-content">
+            <div class="tree-menu" id="phraseTree"></div>
+        </div>
+    </div>
+
     <div class="toast" id="toast">已複製到剪貼簿</div>
 
     <script>
@@ -255,10 +358,45 @@
             }
         };
 
+        function createNavSidebar(data) {
+            const sidebar = document.getElementById('navSidebar');
+            const navItems = [];
+
+            for (let key in data) {
+                const navItem = document.createElement('div');
+                navItem.className = 'nav-item';
+                navItem.textContent = data[key].title;
+                navItem.dataset.key = key;
+
+                navItem.addEventListener('click', () => {
+                    const targetElement = document.querySelector(`.tree-item[data-key="${key}"] .tree-title`);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                        const content = targetElement.nextElementSibling;
+                        if (!content.classList.contains('active')) {
+                            targetElement.click();
+                        }
+
+                        navItems.forEach(item => item.classList.remove('active'));
+                        navItem.classList.add('active');
+                    }
+                });
+
+                navItems.push(navItem);
+                sidebar.appendChild(navItem);
+            }
+
+            if (navItems.length > 0) {
+                navItems[0].classList.add('active');
+            }
+        }
+
         function createTreeMenu(data, container) {
             for (let key in data) {
                 const item = document.createElement('div');
                 item.className = 'tree-item';
+                item.dataset.key = key;
 
                 const title = document.createElement('div');
                 title.className = 'tree-title';
@@ -279,6 +417,17 @@
                 title.onclick = () => {
                     const isActive = content.classList.toggle('active');
                     icon.textContent = isActive ? '-' : '+';
+
+                    if (isActive && !key.includes('_')) {
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(navItem => {
+                            if (navItem.dataset.key === key) {
+                                navItem.classList.add('active');
+                            } else {
+                                navItem.classList.remove('active');
+                            }
+                        });
+                    }
                 };
 
                 item.appendChild(title);
@@ -321,7 +470,47 @@
             });
         }
 
+        window.addEventListener('scroll', () => {
+            const treeItems = document.querySelectorAll('.tree-item[data-key]');
+            let activeItem = null;
+            let smallestDistance = Number.MAX_VALUE;
+
+            // 找出離視窗頂部最近的項目
+            treeItems.forEach((item) => {
+                if (!item.dataset.key.includes('_')) { // 只檢查頂級項目
+                    const rect = item.getBoundingClientRect();
+                    const distance = Math.abs(rect.top);
+                    if (distance < smallestDistance) {
+                        smallestDistance = distance;
+                        activeItem = item;
+                    }
+                }
+            });
+
+            if (activeItem) {
+                const activeKey = activeItem.dataset.key;
+                const navItems = document.querySelectorAll('.nav-item');
+
+                navItems.forEach(navItem => {
+                    if (navItem.dataset.key === activeKey) {
+                        navItem.classList.add('active');
+                        // 確保活動項目在視圖中
+                        if (window.innerWidth < 768) {
+                            navItem.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'nearest',
+                                inline: 'center'
+                            });
+                        }
+                    } else {
+                        navItem.classList.remove('active');
+                    }
+                });
+            }
+        });
+
         createTreeMenu(phrases, document.getElementById('phraseTree'));
+        createNavSidebar(phrases);
     </script>
 </body>
 
