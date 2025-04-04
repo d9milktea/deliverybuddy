@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
             margin: 0;
             padding: 0;
         }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding: 15px;
@@ -17,16 +19,19 @@
             margin: 0 auto;
             background: #f5f5f5;
         }
+
         .tree-menu {
             background: white;
             border-radius: 12px;
             padding: 15px;
             margin-top: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .tree-item {
             margin: 10px 0;
         }
+
         .tree-title {
             font-weight: bold;
             color: #2196F3;
@@ -35,21 +40,41 @@
             background: #f8f9fa;
             border-radius: 6px;
             display: flex;
+            /* justify-content: space-between; */
             align-items: center;
         }
+
+        .tree-title {
+            display: flex;
+            align-items: center;
+        }
+
+        .tree-icon {
+            font-weight: bold;
+            color: #2196F3;
+            margin-right: 10px;
+        }
+
         .tree-content {
             display: none;
             margin-left: 20px;
         }
+
         .tree-content.active {
             display: block;
         }
+
         .phrase-item {
             display: flex;
             align-items: center;
             padding: 10px;
             border-bottom: 1px solid #eee;
         }
+
+        .phrase-item span {
+            white-space: pre-wrap; /* 保留換行符號 */
+        }
+
         .copy-btn {
             background: #2196F3;
             color: white;
@@ -60,9 +85,11 @@
             cursor: pointer;
             font-size: 0.9em;
         }
+
         .copy-btn:active {
             background: #1976D2;
         }
+
         .back-btn {
             background: #666;
             color: white;
@@ -72,12 +99,13 @@
             margin-bottom: 15px;
             cursor: pointer;
         }
+
         .toast {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 10px 20px;
             border-radius: 20px;
@@ -85,6 +113,7 @@
         }
     </style>
 </head>
+
 <body>
     <button onclick="location.href='index.html'" class="back-btn">← 返回</button>
     <h1>外送罐頭包</h1>
@@ -95,31 +124,64 @@
         const phrases = {
             "1_剛接單": {
                 title: "剛接單",
-                phrases: [
-                    "您好，我是您的外送員，已收到訂單，正前往取餐",
-                    "您好，我是外送員，已接單，預計15-20分鐘送達"
-                ]
+                subItems: {
+                    "1_1_一般接單": {
+                        title: "一般接單",
+                        phrases: [
+                            "您好，我是這次的外送員！\n剛接單，目前正前往取餐路上，\n完成訂單後，歡迎給我一個👍好評喲！謝謝！",
+                            "您好，我是這次的外送員。\n完成這次的訂單後，歡迎您動動手指，給我👍好評喲！謝謝\n剛接單，目前前往取餐路上囉！謝謝",
+                            "您好，我是您的外送員，已收到訂單，正前往取餐",
+                            "您好，我是外送員，已接單，預計15-20分鐘送達",
+                        ]
+                    },
+                    "1_2_夾單接單": {
+                        title: "夾單接單",
+                        phrases: [
+                            "您好，我是這次的外送員。\n因系統安排多筆訂單配送，送達時間可能會稍晚，還請您見諒。\n完成訂單後，歡迎給我一個👍好評喲！謝謝",
+                            "您好，我是這次的外送員。\n完成這次的訂單後，歡迎您動動手指，給我👍好評喲！謝謝\n剛接單，此次剛好被系統分派多張訂單派送，需請您耐心稍後其他訂單完成，\n謝謝",
+                            "您好，我是這次的外送員。因系統分派為夾單配送，送達時間可能會比預期晚一些，還請見諒",
+                            "您好，我是外送員。目前手上有兩筆訂單，會依序完成配送",
+                        ]
+                    }
+                }
             },
             "2_剛取餐": {
                 title: "剛取餐",
                 phrases: [
+                    "您好，\n已取餐完成，正在前往您點餐的目的地路上囉！\n謝謝",
+                    "您好，\n已取餐囉，\n因有夾單，所以需稍候喲！\n謝謝",
+                    "您好，我是這次的外送員。\n完成這次的訂單後，歡迎您動動手指，給我👍好評喲！謝謝\n已取餐，目前前往訂餐目的路上囉！謝謝",
+                    "您好，我是這次的外送員。\n完成這次的訂單後，歡迎您動動手指，給我👍好評喲！謝謝\n已取餐囉，\n因有夾單，所以需稍候喲！\n謝謝",
                     "您好，餐點已取餐完成，即將開始配送",
-                    "您好，已取餐完成，正在前往您的位置"
                 ]
             },
             "3_在路上": {
                 title: "在路上",
                 phrases: [
+                    "您好，\n目前正前往您餐點目的的路上囉！",
                     "您好，正在配送途中，約10分鐘到達",
-                    "正在安全騎車前往，請稍候"
+                    "正在安全騎車前往，請稍候",
                 ]
             },
             "4_有夾單": {
                 title: "有夾單",
-                phrases: [
-                    "不好意思，系統有夾帶另一筆訂單，可能會稍微延遲送達時間",
-                    "抱歉，因系統分派有兩筆訂單，送達時間可能會比預期晚一些"
-                ]
+                subItems: {
+                    "4_1_取餐前": {
+                        title: "取餐前夾單",
+                        phrases: [
+                            "不好意思，系統有夾帶另一筆訂單，可能會稍微延遲送達時間",
+                            "抱歉，因系統分派有兩筆訂單，送達時間可能會比預期晚一些",
+                        ]
+                    },
+                    "4_2_取餐後": {
+                        title: "取餐後夾單",
+                        phrases: [
+                            "抱歉，系統臨時插入一個夾單訂單，可能會稍微延遲送達時間\n謝謝",
+                            "不好意思，剛收到系統安排的夾單訂單，會盡快完成配送\n謝謝",
+                            "您好，已取餐囉，\n因有夾單，所以需稍候喲！\n謝謝",
+                        ]
+                    }
+                }
             },
             "5_到達目的": {
                 title: "到達目的",
@@ -130,8 +192,8 @@
                             "5_1_1_送到外送區": {
                                 title: "送到外送區",
                                 phrases: [
-                                    "您好，已送達社區外送區，請記得下來取餐",
-                                    "您好，已到達社區大廳外送區"
+                                    "您好，已送達社區外送區，請記得下來取餐\n謝謝",
+                                    "您好，已到達社區大廳外送區",
                                 ]
                             }
                         }
@@ -142,27 +204,21 @@
                             "5_2_1_未開門": {
                                 title: "在樓下未開門",
                                 phrases: [
-                                    "您好，我已到達樓下，請問方便開門嗎？",
-                                    "您好，我在一樓大門口，需要您開門"
+                                    "您好，我已到達您點餐目的1樓囉，再麻煩幫我開啟1樓的大門\n謝謝",
+                                    "您好，我已到達您點餐目的1樓囉\n謝謝",
                                 ]
                             },
                             "5_2_2_已開門": {
                                 title: "在樓下已開門",
                                 phrases: [
-                                    "您好，已進入大樓，正在上樓",
-                                    "感謝開門，正在前往您的樓層"
+                                    "您好，\n我已經到達您點餐目的1樓囉！\n準備上樓中\n謝謝",
+                                    "您好，\n感謝開門，正在前往您的樓層\n謝謝您耐心的等候",
+                                    "您好，\n已進入大樓，正在前往您的樓層\n謝謝您耐心的等候",
                                 ]
                             }
                         }
                     }
                 }
-            },
-            "6_換單": {
-                title: "換單前往",
-                phrases: [
-                    "您好，已完成前一筆訂單，即將前往您的位置",
-                    "剛完成前一筆配送，現在專心為您服務"
-                ]
             },
             "7_走路中": {
                 title: "走路中",
@@ -170,15 +226,14 @@
                     "7_1_電梯": {
                         title: "電梯中",
                         phrases: [
-                            "正在搭電梯上樓",
-                            "在電梯內，即將到達"
+                            "正在準備搭電梯上樓",
+                            "在電梯內，即將到達",
                         ]
                     },
                     "7_2_樓梯": {
                         title: "走樓梯",
                         phrases: [
-                            "正在走樓梯上樓，馬上到",
-                            "透過樓梯上樓中，很快就到"
+                            "正在走樓梯上樓，請稍後",
                         ]
                     }
                 }
@@ -187,14 +242,15 @@
                 title: "放置指定處",
                 phrases: [
                     "已按照指示放在門口",
-                    "餐點已放在指定位置"
+                    "餐點已放在指定位置",
                 ]
             },
             "9_完成訂單": {
                 title: "完成訂單",
                 phrases: [
+                    "祝您用餐愉快，有個美好的一天！\n即將完成這次的訂單囉！\n請您幫我在這次訂單最後給我👍好評喲！\n謝謝您😄",
                     "餐點已送達，祝您用餐愉快！",
-                    "感謝您的訂購，祝您有美好的一天！"
+                    "感謝您的訂購，祝您有美好的一天！",
                 ]
             }
         };
@@ -203,16 +259,26 @@
             for (let key in data) {
                 const item = document.createElement('div');
                 item.className = 'tree-item';
-                
+
                 const title = document.createElement('div');
                 title.className = 'tree-title';
-                title.textContent = data[key].title;
-                
+
+                const icon = document.createElement('span');
+                icon.className = 'tree-icon';
+                icon.textContent = data[key].subItems ? '+' : '-';
+
+                const titleText = document.createElement('span');
+                titleText.textContent = data[key].title;
+
+                title.appendChild(icon);
+                title.appendChild(titleText);
+
                 const content = document.createElement('div');
                 content.className = 'tree-content';
-                
+
                 title.onclick = () => {
-                    content.classList.toggle('active');
+                    const isActive = content.classList.toggle('active');
+                    icon.textContent = isActive ? '-' : '+';
                 };
 
                 item.appendChild(title);
@@ -222,15 +288,15 @@
                     data[key].phrases.forEach(phrase => {
                         const phraseItem = document.createElement('div');
                         phraseItem.className = 'phrase-item';
-                        
+
                         const copyBtn = document.createElement('button');
                         copyBtn.className = 'copy-btn';
                         copyBtn.textContent = '複製';
                         copyBtn.onclick = () => copyToClipboard(phrase);
-                        
+
                         const phraseText = document.createElement('span');
                         phraseText.textContent = phrase;
-                        
+
                         phraseItem.appendChild(copyBtn);
                         phraseItem.appendChild(phraseText);
                         content.appendChild(phraseItem);
@@ -258,4 +324,5 @@
         createTreeMenu(phrases, document.getElementById('phraseTree'));
     </script>
 </body>
+
 </html>
