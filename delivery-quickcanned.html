@@ -26,6 +26,7 @@
             padding: 15px;
             margin-top: 15px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex: 1; /* 確保樹形菜單填滿主要內容區域 */
         }
 
         .tree-item {
@@ -111,6 +112,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            min-height: calc(100vh - 120px); /* 確保容器至少填滿可視高度 */
         }
 
         .sidebar {
@@ -128,6 +130,8 @@
 
         .nav-container {
             display: flex; /* 在行動裝置上水平排列 */
+            flex-wrap: wrap; /* 允許項目換行 */
+            gap: 5px; /* 項目間距 */
         }
 
         .nav-item {
@@ -139,6 +143,7 @@
             color: #333;
             font-size: 14px;
             transition: all 0.2s;
+            margin-bottom: 5px;
         }
 
         .nav-item:hover {
@@ -166,8 +171,10 @@
         }
 
         .main-content {
-            flex: 1;
+            flex: 1; /* 填滿剩餘空間 */
             min-width: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         /* 桌面版佈局 */
@@ -187,6 +194,7 @@
 
             .nav-container {
                 display: block; /* 在桌面版垂直排列 */
+                flex-wrap: nowrap;
             }
 
             .nav-item {
@@ -202,6 +210,33 @@
                 transform: translateY(-50%);
             }
         }
+
+        /* 新增全展開/全縮合按鈴樣式 */
+        .nav-controls {
+            display: flex;
+            margin-bottom: 10px;
+            gap: 5px;
+        }
+
+        .control-btn {
+            flex: 1;
+            background: #f0f0f0;
+            border: none;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover {
+            background: #e3f2fd;
+        }
+
+        .control-btn:active {
+            background: #bbdefb;
+        }
     </style>
 </head>
 
@@ -212,6 +247,11 @@
     <div class="container">
         <!-- 側邊導航欄 -->
         <div class="sidebar">
+            <!-- 控制按鈕，直接在HTML中定義 -->
+            <div class="nav-controls">
+                <button class="control-btn" id="expandAllBtn">全部展開</button>
+                <button class="control-btn" id="collapseAllBtn">全部縮合</button>
+            </div>
             <div class="nav-container" id="navSidebar"></div>
         </div>
 
@@ -358,52 +398,278 @@
             }
         };
 
-        function createNavSidebar(data) {
-            const sidebar = document.getElementById('navSidebar');
-            const navItems = [];
-
-            for (let key in data) {
-                const navItem = document.createElement('div');
-                navItem.className = 'nav-item';
-                navItem.textContent = data[key].title;
-                navItem.dataset.key = key;
-
-                navItem.addEventListener('click', () => {
-                    const targetElement = document.querySelector(`.tree-item[data-key="${key}"] .tree-title`);
-                    if (targetElement) {
-                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-                        const content = targetElement.nextElementSibling;
-                        if (!content.classList.contains('active')) {
-                            targetElement.click();
-                        }
-
-                        navItems.forEach(item => item.classList.remove('active'));
-                        navItem.classList.add('active');
-                    }
-                });
-
-                navItems.push(navItem);
-                sidebar.appendChild(navItem);
+        /**
+         * 滾動到指定key對應的樹形項目
+         * @param {string} key - 目標項目的唯一標識符
+         */
+        function scrollToTreeItem(key) {
+            // 標記為程式滾動，防止觀察器干擾
+            window.isScrollingProgrammatically = true;
+            
+            // 找到目標元素
+            const targetElement = document.querySelector(`.tree-item[data-key="${key}"]`);
+            if (!targetElement) {
+                window.isScrollingProgrammatically = false;
+                return;
             }
 
-            if (navItems.length > 0) {
-                navItems[0].classList.add('active');
+            // 先展開項目內容
+            const titleElement = targetElement.querySelector('.tree-title');
+            const contentElement = targetElement.querySelector('.tree-content');
+            if (titleElement && contentElement && !contentElement.classList.contains('active')) {
+                titleElement.click();
+            }
+
+            // 使用替代方法處理滾動
+            setTimeout(() => {
+                // 計算目標絕對位置
+                const navHeight = document.querySelector('.sidebar').offsetHeight;
+                
+                // 根據螢幕寬度使用不同方法
+                if (window.innerWidth >= 768) {
+                    // 大螢幕：直接使用元素本身作為定位點
+                    // 獲取元素的絕對位置
+                    targetElement.style.scrollMarginTop = (navHeight + 30) + 'px';
+                    
+                    // 使用原生DOM方法滾動，避免使用scrollIntoView
+                    targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+                } else {
+                    // 小螢幕：計算相對位置
+                    const targetRect = targetElement.getBoundingClientRect();
+                    const targetPosition = window.pageYOffset + targetRect.top - navHeight - 30;
+                    
+                    // 滾動到目標位置
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+                
+                // 滾動完成後重置標記
+                setTimeout(() => {
+                    window.isScrollingProgrammatically = false;
+                }, 600); // 確保滾動動畫完成
+            }, 50);
+        }
+
+        /**
+         * 監聽滾動事件並更新導航狀態
+         */
+        function setupScrollObserver() {
+            if ('IntersectionObserver' in window) {
+                const topLevelItems = Array.from(document.querySelectorAll('.tree-item[data-key]')).filter(
+                    item => !item.dataset.key.includes('_')
+                );
+
+                const navHeight = document.querySelector('.sidebar').offsetHeight;
+
+                const observer = new IntersectionObserver((entries) => {
+                    // 如果是程式控制的滾動，則不處理
+                    if (window.isScrollingProgrammatically) return;
+
+                    let bestVisibleItem = null;
+                    let bestVisibility = -1;
+
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const targetRect = entry.boundingClientRect;
+                            const visibility = 1 - Math.abs(targetRect.top - navHeight) / window.innerHeight;
+
+                            if (visibility > bestVisibility) {
+                                bestVisibility = visibility;
+                                bestVisibleItem = entry.target;
+                            }
+                        }
+                    });
+
+                    if (bestVisibleItem) {
+                        updateActiveNavItem(bestVisibleItem.dataset.key);
+                    }
+                }, {
+                    rootMargin: `-${navHeight}px 0px 0px 0px`,
+                    threshold: [0, 0.25, 0.5, 0.75, 1]
+                });
+
+                topLevelItems.forEach(item => observer.observe(item));
+            } else {
+                window.addEventListener('scroll', debounce(() => {
+                    // 如果是程式控制的滾動，則不處理
+                    if (window.isScrollingProgrammatically) return;
+
+                    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+                    const navHeight = document.querySelector('.sidebar').offsetHeight;
+                    const viewportPosition = scrollY + navHeight;
+
+                    const topLevelItems = Array.from(document.querySelectorAll('.tree-item[data-key]')).filter(
+                        item => !item.dataset.key.includes('_')
+                    );
+
+                    if (!topLevelItems.length) return;
+
+                    let activeItem = null;
+                    let minDistance = Infinity;
+
+                    topLevelItems.forEach(item => {
+                        const top = item.offsetTop;
+                        const distance = Math.abs(top - viewportPosition);
+
+                        if ((top <= viewportPosition && distance < minDistance) ||
+                            (!activeItem && distance < minDistance)) {
+                            activeItem = item;
+                            minDistance = distance;
+                        }
+                    });
+
+                    if (activeItem) {
+                        const activeKey = activeItem.dataset.key;
+                        updateActiveNavItem(activeKey);
+                    }
+                }, 100));
             }
         }
 
+        /**
+         * 初始化導航項目點擊事件
+         */
+        function initNavEvents() {
+            document.querySelectorAll('.nav-item').forEach(navItem => {
+                navItem.addEventListener('click', function () {
+                    const key = this.dataset.key;
+                    
+                    // 防止重複點擊
+                    if (this.classList.contains('active')) return;
+                    
+                    // 停止當前滾動
+                    window.scrollTo(window.pageXOffset, window.pageYOffset);
+                    
+                    // 清除所有活動狀態並設置當前項目為活動狀態
+                    document.querySelectorAll('.nav-item').forEach(item => 
+                        item.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 設置一個標記，表示點擊導致的滾動
+                    window.navigatingByClick = true;
+                    
+                    // 滾動到目標位置
+                    scrollToTreeItem(key);
+                    
+                    // 確保滾動後導航選中狀態不被覆蓋
+                    setTimeout(() => {
+                        document.querySelectorAll('.nav-item').forEach(item => 
+                            item.classList.remove('active'));
+                        this.classList.add('active');
+                        window.navigatingByClick = false;
+                    }, 700);
+                });
+            });
+        }
+
+        /**
+         * 全部展開後滾動到指定項目
+         * @param {string} key - 目標項目的唯一標識符
+         */
+        function expandAllAndScrollTo(key) {
+            expandAllItems();
+            window.isScrollingProgrammatically = true;
+            
+            setTimeout(() => {
+                scrollToTreeItem(key);
+            }, 300);
+        }
+
+        /**
+         * 展開所有樹形項目
+         */
+        function expandAllItems() {
+            const treeItems = document.querySelectorAll('.tree-item');
+            treeItems.forEach(item => {
+                const content = item.querySelector('.tree-content');
+                const icon = item.querySelector('.tree-icon');
+                if (content && !content.classList.contains('active')) {
+                    content.classList.add('active');
+                    if (icon) icon.textContent = '-';
+                }
+            });
+        }
+
+        /**
+         * 折疊所有樹形項目
+         */
+        function collapseAllItems() {
+            const treeItems = document.querySelectorAll('.tree-item');
+            treeItems.forEach(item => {
+                const content = item.querySelector('.tree-content');
+                const icon = item.querySelector('.tree-icon');
+                if (content && content.classList.contains('active')) {
+                    content.classList.remove('active');
+                    if (icon) icon.textContent = '+';
+                }
+            });
+        }
+
+        /**
+         * 更新導航欄中的活動項目
+         * @param {string} key - 活動項目的唯一標識符
+         */
+        function updateActiveNavItem(key) {
+            // 如果當前是通過點擊導航進行的滾動，則不要更新導航狀態
+            if (window.navigatingByClick) return;
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            let activeNavItem = null;
+
+            navItems.forEach(navItem => {
+                if (navItem.dataset.key === key) {
+                    navItem.classList.add('active');
+                    activeNavItem = navItem;
+                } else {
+                    navItem.classList.remove('active');
+                }
+            });
+
+            if (activeNavItem && window.innerWidth < 768) {
+                const navContainer = document.querySelector('.nav-container');
+                if (navContainer) {
+                    activeNavItem.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center'
+                    });
+                }
+            }
+        }
+
+        /**
+         * 綁定控制按鈕事件
+         */
+        function bindControlButtons() {
+            // 展開所有按鈕
+            document.getElementById('expandAllBtn').addEventListener('click', expandAllItems);
+            // 折疊所有按鈕
+            document.getElementById('collapseAllBtn').addEventListener('click', collapseAllItems);
+        }
+
+        /**
+         * 創建樹形菜單結構
+         * @param {Object} data - 包含菜單項的數據對象
+         * @param {HTMLElement} container - 菜單容器元素
+         */
         function createTreeMenu(data, container) {
+            // 遍歷所有資料項目
             for (let key in data) {
+                // 創建樹形項目容器
                 const item = document.createElement('div');
                 item.className = 'tree-item';
-                item.dataset.key = key;
+                item.dataset.key = key; // 保存唯一標識符
 
                 const title = document.createElement('div');
                 title.className = 'tree-title';
 
                 const icon = document.createElement('span');
                 icon.className = 'tree-icon';
-                icon.textContent = data[key].subItems ? '+' : '-';
+
+                const hasSubItems = data[key].subItems;
+                icon.textContent = '+';
 
                 const titleText = document.createElement('span');
                 titleText.textContent = data[key].title;
@@ -460,6 +726,10 @@
             }
         }
 
+        /**
+         * 將文本複製到剪貼簿並顯示提示
+         * @param {string} text - 要複製的文本
+         */
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
                 const toast = document.getElementById('toast');
@@ -470,47 +740,59 @@
             });
         }
 
-        window.addEventListener('scroll', () => {
-            const treeItems = document.querySelectorAll('.tree-item[data-key]');
-            let activeItem = null;
-            let smallestDistance = Number.MAX_VALUE;
+        /**
+         * 防抖函數，限制函數調用頻率
+         * @param {Function} func - 要防抖的函數
+         * @param {number} wait - 等待時間（毫秒）
+         * @returns {Function} 防抖後的函數
+         */
+        function debounce(func, wait) {
+            let timeout;
+            return function () {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
 
-            // 找出離視窗頂部最近的項目
-            treeItems.forEach((item) => {
-                if (!item.dataset.key.includes('_')) { // 只檢查頂級項目
-                    const rect = item.getBoundingClientRect();
-                    const distance = Math.abs(rect.top);
-                    if (distance < smallestDistance) {
-                        smallestDistance = distance;
-                        activeItem = item;
-                    }
-                }
-            });
-
-            if (activeItem) {
-                const activeKey = activeItem.dataset.key;
-                const navItems = document.querySelectorAll('.nav-item');
-
-                navItems.forEach(navItem => {
-                    if (navItem.dataset.key === activeKey) {
-                        navItem.classList.add('active');
-                        // 確保活動項目在視圖中
-                        if (window.innerWidth < 768) {
-                            navItem.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'nearest',
-                                inline: 'center'
-                            });
-                        }
-                    } else {
-                        navItem.classList.remove('active');
-                    }
-                });
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 設置全局變數
+            window.isScrollingProgrammatically = false;
+            window.navigatingByClick = false;
+            
+            // 創建樹形菜單
+            createTreeMenu(phrases, document.getElementById('phraseTree'));
+            
+            // 創建導航項目
+            document.getElementById('navSidebar').innerHTML = '';
+            const navItems = [];
+            
+            // 只為頂級項目創建導航
+            for (let key in phrases) {
+                const navItem = document.createElement('div');
+                navItem.className = 'nav-item';
+                navItem.textContent = phrases[key].title;
+                navItem.dataset.key = key;
+                navItems.push(navItem);
+                document.getElementById('navSidebar').appendChild(navItem);
             }
+            
+            // 默認激活第一個項目
+            if (navItems.length > 0) {
+                navItems[0].classList.add('active');
+            }
+            
+            // 確保DOM完全加載後再綁定事件
+            setTimeout(() => {
+                initNavEvents();
+                bindControlButtons();
+            }, 100);
+            
+            // 設置滾動觀察器
+            setupScrollObserver();
         });
-
-        createTreeMenu(phrases, document.getElementById('phraseTree'));
-        createNavSidebar(phrases);
     </script>
 </body>
 
