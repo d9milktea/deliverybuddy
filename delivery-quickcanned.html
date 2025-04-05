@@ -15,7 +15,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding: 15px;
-            max-width: 800px;
+            max-width: 99%;
             margin: 0 auto;
             background: #f5f5f5;
         }
@@ -107,20 +107,13 @@
             display: none;
         }
 
-        /* 修改側邊導航欄樣式，在行動裝置上固定顯示在頂部 */
-        .container {
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            min-height: calc(100vh - 120px); /* 確保容器至少填滿可視高度 */
-        }
-
+        /* 修改導航樣式，統一橫排顯示 */
         .sidebar {
-            width: 100%;
-            position: sticky; /* 更改為粘性定位 */
-            top: 0; /* 固定在頂部 */
-            z-index: 100; /* 確保在其他內容之上 */
-            overflow-x: auto;
+            width: 100%; /* 在所有螢幕上都使用全寬 */
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            overflow-x: visible; /* 改為可見，不要有水平滾動 */
             margin-bottom: 15px;
             border-radius: 8px;
             background: white;
@@ -129,85 +122,51 @@
         }
 
         .nav-container {
-            display: flex; /* 在行動裝置上水平排列 */
+            display: flex; /* 統一使用水平排列 */
             flex-wrap: wrap; /* 允許項目換行 */
             gap: 5px; /* 項目間距 */
+            justify-content: flex-start; /* 從左側開始排列 */
         }
 
         .nav-item {
             padding: 8px 10px;
-            margin-right: 5px;
             white-space: nowrap; /* 防止文字換行 */
             border-radius: 4px;
             cursor: pointer;
             color: #333;
             font-size: 14px;
             transition: all 0.2s;
-            margin-bottom: 5px;
+            margin: 0 5px 5px 0; /* 使用統一的外邊距 */
         }
 
-        .nav-item:hover {
-            background: #e3f2fd;
-        }
-
-        .nav-item.active {
-            background: #2196F3;
-            color: white;
-            font-weight: bold;
-            position: relative;
-        }
-
-        /* 為活動項增加指示器 */
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 8px;
-            height: 8px;
-            background: #2196F3;
-            border-radius: 50%;
-        }
-
-        .main-content {
-            flex: 1; /* 填滿剩餘空間 */
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 桌面版佈局 */
+        /* 修改桌面版佈局，移除原有的垂直排列設定 */
         @media (min-width: 768px) {
             .container {
-                flex-direction: row;
+                flex-direction: column; /* 改為垂直方向，導航欄在上方 */
             }
 
             .sidebar {
-                width: 150px;
-                position: sticky;
-                top: 20px; /* 在桌面版上給頂部一些距離 */
-                height: calc(100vh - 40px);
-                overflow-y: auto;
-                padding-right: 15px;
+                width: 100%; /* 全寬顯示 */
+                height: auto; /* 自動高度 */
+                top: 0; /* 固定在頂部 */
+                padding: 10px; /* 使用統一的內邊距 */
             }
 
             .nav-container {
-                display: block; /* 在桌面版垂直排列 */
-                flex-wrap: nowrap;
+                display: flex; /* 保持水平排列 */
+                flex-wrap: wrap; /* 保持允許換行 */
             }
 
             .nav-item {
-                margin-bottom: 5px;
-                margin-right: 0;
+                margin: 0 5px 5px 0; /* 保持統一的外邊距 */
             }
 
-            /* 修改活動項指示器位置 */
+            /* 修改活動項指示器位置，統一在底部 */
             .nav-item.active::after {
-                bottom: auto;
-                left: -5px;
-                top: 50%;
-                transform: translateY(-50%);
+                bottom: -5px;
+                left: 50%;
+                top: auto; /* 取消top設置 */
+                transform: translateX(-50%);
             }
         }
 
@@ -420,25 +379,19 @@
                 titleElement.click();
             }
 
-            // 使用替代方法處理滾動
+            // 使用可靠方法處理滾動
             setTimeout(() => {
                 // 計算目標絕對位置
                 const navHeight = document.querySelector('.sidebar').offsetHeight;
                 
                 // 根據螢幕寬度使用不同方法
                 if (window.innerWidth >= 768) {
-                    // 大螢幕：直接使用元素本身作為定位點
-                    // 獲取元素的絕對位置
+                    // 大螢幕：使用scrollMarginTop屬性
                     targetElement.style.scrollMarginTop = (navHeight + 30) + 'px';
-                    
-                    // 使用原生DOM方法滾動，避免使用scrollIntoView
                     targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
                 } else {
-                    // 小螢幕：計算相對位置
-                    const targetRect = targetElement.getBoundingClientRect();
-                    const targetPosition = window.pageYOffset + targetRect.top - navHeight - 30;
-                    
-                    // 滾動到目標位置
+                    // 小螢幕：計算精確位置
+                    const targetPosition = targetElement.offsetTop - navHeight - 30;
                     window.scrollTo({
                         top: targetPosition,
                         behavior: 'smooth'
@@ -448,8 +401,44 @@
                 // 滾動完成後重置標記
                 setTimeout(() => {
                     window.isScrollingProgrammatically = false;
-                }, 600); // 確保滾動動畫完成
+                }, 600);
             }, 50);
+        }
+
+        /**
+         * 初始化導航項目點擊事件
+         */
+        function initNavEvents() {
+            document.querySelectorAll('.nav-item').forEach(navItem => {
+                navItem.addEventListener('click', function() {
+                    const key = this.dataset.key;
+                    
+                    // 防止重複點擊
+                    if (this.classList.contains('active') && !window.forceNavUpdate) return;
+                    
+                    // 停止當前滾動
+                    window.scrollTo(window.pageXOffset, window.pageYOffset);
+                    
+                    // 清除所有活動狀態並設置當前項目為活動狀態
+                    document.querySelectorAll('.nav-item').forEach(item => 
+                        item.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 設置標記，防止滾動觀察器干擾
+                    window.navigatingByClick = true;
+                    
+                    // 滾動到目標位置
+                    scrollToTreeItem(key);
+                    
+                    // 確保滾動後導航選中狀態不被覆蓋
+                    setTimeout(() => {
+                        document.querySelectorAll('.nav-item').forEach(item => 
+                            item.classList.remove('active'));
+                        this.classList.add('active');
+                        window.navigatingByClick = false;
+                    }, 700);
+                });
+            });
         }
 
         /**
@@ -529,39 +518,35 @@
         }
 
         /**
-         * 初始化導航項目點擊事件
+         * 更新導航欄中的活動項目
+         * @param {string} key - 活動項目的唯一標識符
          */
-        function initNavEvents() {
-            document.querySelectorAll('.nav-item').forEach(navItem => {
-                navItem.addEventListener('click', function () {
-                    const key = this.dataset.key;
-                    
-                    // 防止重複點擊
-                    if (this.classList.contains('active')) return;
-                    
-                    // 停止當前滾動
-                    window.scrollTo(window.pageXOffset, window.pageYOffset);
-                    
-                    // 清除所有活動狀態並設置當前項目為活動狀態
-                    document.querySelectorAll('.nav-item').forEach(item => 
-                        item.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // 設置一個標記，表示點擊導致的滾動
-                    window.navigatingByClick = true;
-                    
-                    // 滾動到目標位置
-                    scrollToTreeItem(key);
-                    
-                    // 確保滾動後導航選中狀態不被覆蓋
-                    setTimeout(() => {
-                        document.querySelectorAll('.nav-item').forEach(item => 
-                            item.classList.remove('active'));
-                        this.classList.add('active');
-                        window.navigatingByClick = false;
-                    }, 700);
-                });
+        function updateActiveNavItem(key) {
+            // 如果當前是通過點擊導航進行的滾動，則不要更新導航狀態
+            if (window.navigatingByClick) return;
+            
+            const navItems = document.querySelectorAll('.nav-item');
+            let activeNavItem = null;
+
+            navItems.forEach(navItem => {
+                if (navItem.dataset.key === key) {
+                    navItem.classList.add('active');
+                    activeNavItem = navItem;
+                } else {
+                    navItem.classList.remove('active');
+                }
             });
+
+            if (activeNavItem && window.innerWidth < 768) {
+                const navContainer = document.querySelector('.nav-container');
+                if (navContainer) {
+                    activeNavItem.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center'
+                    });
+                }
+            }
         }
 
         /**
@@ -605,38 +590,6 @@
                     if (icon) icon.textContent = '+';
                 }
             });
-        }
-
-        /**
-         * 更新導航欄中的活動項目
-         * @param {string} key - 活動項目的唯一標識符
-         */
-        function updateActiveNavItem(key) {
-            // 如果當前是通過點擊導航進行的滾動，則不要更新導航狀態
-            if (window.navigatingByClick) return;
-            
-            const navItems = document.querySelectorAll('.nav-item');
-            let activeNavItem = null;
-
-            navItems.forEach(navItem => {
-                if (navItem.dataset.key === key) {
-                    navItem.classList.add('active');
-                    activeNavItem = navItem;
-                } else {
-                    navItem.classList.remove('active');
-                }
-            });
-
-            if (activeNavItem && window.innerWidth < 768) {
-                const navContainer = document.querySelector('.nav-container');
-                if (navContainer) {
-                    activeNavItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'center'
-                    });
-                }
-            }
         }
 
         /**
@@ -761,6 +714,7 @@
             // 設置全局變數
             window.isScrollingProgrammatically = false;
             window.navigatingByClick = false;
+            window.forceNavUpdate = false;
             
             // 創建樹形菜單
             createTreeMenu(phrases, document.getElementById('phraseTree'));
@@ -788,10 +742,8 @@
             setTimeout(() => {
                 initNavEvents();
                 bindControlButtons();
+                setupScrollObserver();
             }, 100);
-            
-            // 設置滾動觀察器
-            setupScrollObserver();
         });
     </script>
 </body>
